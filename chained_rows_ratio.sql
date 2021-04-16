@@ -1,0 +1,1 @@
+select 'Chained Rows ' "Ratio", round((select sum(value) from v$sysstat where name = 'table fetch continued row') / (select sum(value) from v$sysstat where name in ('table scan rows gotten','table fetch by rowid')) * 100, 3)||'%' "Percentage" from dual;

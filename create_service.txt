@@ -1,0 +1,49 @@
+set serveroutput on 
+
+whenever sqlerror continue;
+drop table usr_tmp;
+drop table usr_tmp1;
+
+create table usr_tmp (username varchar2(50));
+insert into usr_tmp values ('SRVBLADEMGR');
+insert into usr_tmp values ('SRVPRODSRVRO');
+insert into usr_tmp values ('SRVPRODSRV');
+commit;
+
+create table usr_tmp1 as
+select username from usr_tmp
+minus
+select a.username from dba_users a, usr_tmp b where a.username = b.username;
+
+declare
+ run_create_user varchar2(200);
+ run_grant_priv  varchar2(200);
+begin
+for x in (select username from usr_tmp1) loop
+ dbms_output.put_line('creating user: '||x.username);
+ case rtrim(x.username) 
+   when 'SRVBLADEMGR' then
+      begin
+       run_create_user := 'create user srvblademgr identified by NaUaw3_w default tablespace inform'; 
+       run_grant_priv  := 'grant connect, dba to srvblademgr'; 
+       execute immediate run_create_user;
+       execute immediate run_grant_priv;
+      end;
+   when 'SRVPRODSRVRO' then
+      begin
+       run_create_user := 'create user srvprodsrvro identified by NaU$ro4b default tablespace inform';
+       run_grant_priv  := 'grant create session, select any table to srvprodsrvro';
+       execute immediate run_create_user;
+       execute immediate run_grant_priv;
+      end;
+   when 'SRVPRODSRV' then
+      begin
+       run_create_user := 'create user srvprodsrv identified by PaU$dp5z default tablespace inform';
+       run_grant_priv  := 'grant connect, dba to srvprodsrv';
+       execute immediate run_create_user;
+       execute immediate run_grant_priv;
+      end;
+   end case;
+end loop;
+end;
+/

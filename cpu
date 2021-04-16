@@ -1,0 +1,25 @@
+
+
+#=====================================================================
+#
+# This will report the processes in order of cpu percentage
+#    and then memory usage (from biggest to smallest)
+#
+#---------------------------------------------------------------------
+
+echo '    USER   PID %CPU  VSZ %MEM    STIME COMMAND'
+
+ps -ef -o user -o pid  -o pcpu -o vsz -o pmem -o stime -o args   |
+grep -v 'USER  '  |
+sort +2nr +3nr
+
+exit
+
+
+
+# Will show you what percent of the cpu each process is taking. 
+# good for showing the cpu hogs during "my server's slow" research.
+
+/usr/ucb/ps -auxww
+
+
