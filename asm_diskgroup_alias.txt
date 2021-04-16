@@ -1,0 +1,13 @@
+ASM. However, we may use the query below provided by JP to check for aliases next time.
+
+select b.name gname, a.name aname, a.system_created, a.alias_directory,
+         c.type file_type
+  from v$asm_alias a, v$ASM_DISKGROUP b, v$asm_file c
+  where a.group_number = b.group_number
+        and a.group_number = c.group_number(+)
+        and a.file_number = c.file_number(+)
+        and a.file_incarnation = c.incarnation(+)
+        and b.name='DATA'
+        and c.type='DATAFILE'
+        order by 2;
+

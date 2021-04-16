@@ -1,0 +1,51 @@
+set serveroutput on
+declare
+
+        v_apex_users_count NUMBER;
+        v_apex_packages_count NUMBER;
+        v_apex_synonymns_count NUMBER;
+        v_con_name VARCHAR2(100);
+        v_query VARCHAR2(1000);
+
+begin
+
+    --select v$containers.name into v_con_name from v$containers,v$instance where v$containers.con_id = v$instance.con_id;
+    --dbms_output.put_line('INFO: v_con_name = '||v_con_name);
+    select count(*) into v_apex_packages_count FROM dba_objects WHERE object_name in ('HTMLDB_SYSTEM') and object_type='PACKAGE';
+    select count(*) into v_apex_synonymns_count FROM dba_objects WHERE object_name in ('APEX_PKG_APP_INSTALL_LOG', 'APEX_SPATIAL', 'HTMLDB_SYSTEM') and owner='PUBLIC' and object_type='SYNONYM';
+    select count(*) into v_apex_users_count FROM dba_users WHERE username in ('APEX_030200','APEX_PUBLIC_USER','FLOWS_FILES');
+    
+    dbms_output.put_line('INFO: v_apex_packages_count = '||v_apex_packages_count);
+    dbms_output.put_line('INFO: v_apex_synonymns_count = '||v_apex_synonymns_count);
+    dbms_output.put_line('INFO: v_apex_users_count = '||v_apex_users_count);
+
+    if (v_apex_packages_count = 0) then
+        dbms_output.put_line('INFO: no packages to remove');
+    else
+        dbms_output.put_line('INFO: failed to remove apex packages');
+        RAISE_APPLICATION_ERROR(-20100, 'failed to remove apex packages');
+    end if;
+
+    if (v_apex_synonymns_count = 0) then
+
+        dbms_output.put_line('INFO: no synonymns to remove');
+    
+    else
+        dbms_output.put_line('ERROR: synonymns not removed');
+        RAISE_APPLICATION_ERROR(-20100, 'failed to remove apex synonymns');
+
+    end if;
+
+    if (v_apex_users_count = 0) then
+
+        dbms_output.put_line('INFO: no users to remove');
+    
+    else
+        dbms_output.put_line('ERROR: apex users not removed');
+        RAISE_APPLICATION_ERROR(-20100, 'failed to remove apex users');
+
+    end if;
+
+end;
+/
+

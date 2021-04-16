@@ -1,0 +1,54 @@
+set serveroutput on size 1000000
+
+DECLARE
+
+
+    v_instance_name varchar2(30);
+    v_host_name varchar2(30);
+
+    CURSOR rec_apply_cursor IS
+    SELECT unique apply_name
+           from dba_apply_error;
+BEGIN
+
+    select host_name, instance_name into v_host_name, v_instance_name from v$instance;
+    FOR apply_rec IN rec_apply_cursor LOOP
+        DECLARE 
+            v_cnt number;
+            CURSOR fix_apply_cursor IS
+            SELECT LOCAL_TRANSACTION_ID
+                from dba_apply_error
+                where apply_name=apply_rec.apply_name 
+		and error_message not like '%PFEX_PENDINGTRANSACTIONS%'
+                and (error_message like '%PFEX_%' 
+		     or error_message like '%USER_TABS%'
+                     or error_message like '%GRPROLE%' 
+		     or error_message like '%SOL_%'
+		     or error_message like '%LNMT%'
+		     or error_message like '%CDISC_%'
+		     or error_message like '%CODES_%'
+		     or error_message like '%FORM_%'
+		     or error_message like '%LOOKUP_%'
+		     or error_message like '%SEQ_%'
+		     or error_message like '%VISIDX_%'
+		     or error_message like '%VIDX_%'
+		     or error_message like '%PF_HEARTBEAT_TMV%');
+         BEGIN
+             v_cnt:=0;
+             FOR tnx_id_rec IN fix_apply_cursor LOOP
+                 dbms_apply_adm.delete_error(tnx_id_rec.LOCAL_TRANSACTION_ID);
+                 v_cnt:=v_cnt+1;
+             END LOOP;
+             if v_cnt > 0 then 
+             dbms_output.put_line('Total Deleted for '||apply_rec.apply_name||'='||v_cnt);
+             execute immediate 'INSERT INTO STRMADMIN.STREAM_AUTOFIX_LOG VALUES
+                (UPPER('''||v_host_name||'''),UPPER('''||v_instance_name||'''),
+                UPPER('''||apply_rec.apply_name||'''),''DEL'','''||to_char(v_cnt)||''',sysdate)';
+             end if;
+         END;
+
+    END LOOP;
+
+END;
+/
+EXIT;

@@ -1,0 +1,144 @@
+set serveroutput on
+declare
+
+        v_apex_users_count NUMBER;
+        v_apex_packages_count NUMBER;
+        v_apex_synonymns_count NUMBER;
+        v_count NUMBER;
+        v_con_name VARCHAR2(100);
+        v_query VARCHAR2(1000);
+        type arr_str IS VARRAY(20) OF varchar2(32676);
+        v_arr arr_str;
+        v_obj VARCHAR2(100);
+
+begin
+
+    --select v$containers.name into v_con_name from v$containers,v$instance where v$containers.con_id = v$instance.con_id;
+    --dbms_output.put_line('INFO: v_con_name = '||v_con_name);
+    select count(*) into v_apex_packages_count FROM dba_objects WHERE object_name in ('HTMLDB_SYSTEM','WWV_DBMS_SQL','WWV_FLOW_KEY','WWV_FLOW_VAL') and object_type='PACKAGE';
+    select count(*) into v_apex_synonymns_count FROM dba_objects WHERE object_name in ('APEX_PKG_APP_INSTALL_LOG', 'APEX_SPATIAL','HTMLDB_SYSTEM','HTMLDB_SQL_WORKSHOP','HTMLDB_DATA_WORKSHOP','WWV_FLOW_FIELD_TEMPLATES','WWV_FLOW_GENERIC','WWV_FLOW_LISTS_OF_VALUES$','WWV_FLOW_LIST_OF_VALUES_DATA','WWV_FLOW_PATCHES','WWV_FLOW_TEMPLATES_UTIL','WWV_FLOW_XML_REPORT','WWV_FLOW_XML_REPORT2','WWV_FLOW_FILE_OBJECTS$','WWV_FLOW_HELP','WWV_FLOW_LOV_TEMP','WWV_FLOW_TEMP_TABLE','WWV_RENDER_CALENDAR2','WWV_SPELING') and owner='PUBLIC' and object_type='SYNONYM';
+    select count(*) into v_apex_users_count FROM dba_users WHERE username in ('APEX_030200','APEX_PUBLIC_USER','FLOWS_FILES');
+    
+    dbms_output.put_line('INFO: v_apex_packages_count = '||v_apex_packages_count);
+    dbms_output.put_line('INFO: v_apex_synonymns_count = '||v_apex_synonymns_count);
+    dbms_output.put_line('INFO: v_apex_users_count = '||v_apex_users_count);
+
+    if (v_apex_packages_count = 0) then
+        dbms_output.put_line('INFO: no packages to remove');
+    else
+        dbms_output.put_line('INFO: removing packages');
+
+        v_query := 'alter session set "_oracle_script"=true' ;
+        dbms_output.put_line('[QUERY]: '||v_query);
+        execute immediate v_query;
+
+        v_arr := arr_str('HTMLDB_SYSTEM','WWV_DBMS_SQL','WWV_FLOW_KEY','WWV_FLOW_VAL');
+        for indx in 1 .. v_arr.count loop
+            v_obj := v_arr(indx);
+            select count(*) into v_count FROM dba_objects WHERE object_name=v_obj and object_type='PACKAGE';
+            if v_count > 0 then
+                v_query := 'drop package ' ||v_obj;
+                dbms_output.put_line('[QUERY]: '||v_query);
+                execute immediate v_query;
+            end if;
+        end loop;
+    end if;
+
+    if (v_apex_synonymns_count = 0) then
+
+        dbms_output.put_line('INFO: no synonymns to remove');
+    
+    else
+        dbms_output.put_line('INFO: removing synonymns');
+
+        v_query := 'alter session set "_oracle_script"=true' ;
+        dbms_output.put_line('[QUERY]: '||v_query);
+        execute immediate v_query;
+
+        v_arr := arr_str('APEX_PKG_APP_INSTALL_LOG', 'APEX_SPATIAL', 'HTMLDB_SYSTEM','HTMLDB_SQL_WORKSHOP','HTMLDB_DATA_WORKSHOP','WWV_FLOW_FIELD_TEMPLATES','WWV_FLOW_GENERIC','WWV_FLOW_LISTS_OF_VALUES$','WWV_FLOW_LIST_OF_VALUES_DATA','WWV_FLOW_PATCHES','WWV_FLOW_TEMPLATES_UTIL','WWV_FLOW_XML_REPORT','WWV_FLOW_XML_REPORT2','WWV_FLOW_FILE_OBJECTS$','WWV_FLOW_HELP','WWV_FLOW_LOV_TEMP','WWV_FLOW_TEMP_TABLE','WWV_RENDER_CALENDAR2','WWV_SPELING');
+        for indx in 1 .. v_arr.count loop
+            v_obj := v_arr(indx);
+            select count(*) into v_count from dba_objects WHERE object_name=v_obj and owner='PUBLIC' and object_type='SYNONYM';
+            if v_count > 0 then
+                v_query := 'drop PUBLIC SYNONYM ' ||v_obj;
+                dbms_output.put_line('[QUERY]: '||v_query);
+                execute immediate v_query;
+            end if;
+        end loop;
+    
+    end if;
+
+    if (v_apex_users_count = 0) then
+
+        dbms_output.put_line('INFO: no users to remove');
+    
+    else
+        dbms_output.put_line('INFO: removing users');
+
+        v_query := 'alter session set "_oracle_script"=true';
+        dbms_output.put_line('[QUERY]: '||v_query);
+        execute immediate v_query;
+
+        v_query := 'drop user FLOWS_FILES cascade';
+        dbms_output.put_line('[QUERY]: '||v_query);
+        execute immediate v_query;
+
+        v_arr := arr_str('APEX_030200', 'APEX_PUBLIC_USER', 'FLOWS_FILES');
+        for indx in 1 .. v_arr.count loop
+            v_obj := v_arr(indx);
+            select count(*) into v_count from dba_users WHERE username=v_obj;
+            if v_count > 0 then
+                v_query := 'drop user ' ||v_obj||' cascade';
+                dbms_output.put_line('[QUERY]: '||v_query);
+                execute immediate v_query;
+            end if;
+        end loop;
+
+    end if;
+    
+     v_query := 'alter session set "_oracle_script"=true' ;
+     dbms_output.put_line('[QUERY ]: '||v_query);
+     execute immediate v_query;
+     select count(*) into v_count from dba_objects WHERE object_name='validate_apex'  and object_type='PROCEDURE';
+     if v_count > 0 then
+    	v_query := 'drop PROCEDURE  ' || 'validate_apex';
+    	dbms_output.put_line('[QUERY]: '||v_query);
+    	execute immediate v_query;
+     end if;
+
+     
+     select count(*) into v_count from dba_objects WHERE object_name='WWV_FLOW_VAL_LIB'  and object_type='LIBRARY';
+     if v_count > 0 then
+    	v_query := 'drop LIBRARY  ' || 'WWV_FLOW_VAL_LIB';
+    	dbms_output.put_line('[QUERY]: '||v_query);
+    	execute immediate v_query;
+     end if;     
+	
+     select count(*) into v_count from dba_objects WHERE object_name='WWV_FLOW_GV$SESSION'  and object_type='VIEW';
+     if v_count > 0 then
+    	v_query := 'drop VIEW  ' || 'WWV_FLOW_GV$SESSION';
+    	dbms_output.put_line('[QUERY]: '||v_query);
+    	execute immediate v_query;
+     end if; 	
+     
+     select count(*)  into v_count from dba_objects WHERE object_name='APEX$TEAM_DEV_FILES' and owner='ORACLEADS';
+     if v_count > 0 then
+         	v_query := 'drop table ORACLEADS.APEX$TEAM_DEV_FILES';
+         	dbms_output.put_line('[QUERY]: '||v_query);
+         	execute immediate v_query;
+     end if; 
+
+    v_query := 'alter session set "_oracle_script"=true' ;
+    dbms_output.put_line('[QUERY ]: '||v_query);
+    execute immediate v_query; 
+    select object_name BULK COLLECT into v_arr FROM dba_objects WHERE  REGEXP_LIKE(object_name, '^(APEX|HTMLDB|WWV)')  and object_type='SYNONYM';
+
+    for indx in 1 .. v_arr.count loop
+        v_query := 'drop public synonymn '||v_arr(indx);
+        dbms_output.put_line('[QUERY]: '|| v_query);
+        execute immediate v_query;
+    end loop;
+	
+end;
+/
+
